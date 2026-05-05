@@ -1,0 +1,8 @@
+logLevel: info
+rtsp: yes
+rtspAddress: :8554
+
+paths:
+  all_others:
+    source: publisher
+

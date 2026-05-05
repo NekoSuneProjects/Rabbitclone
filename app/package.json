@@ -1,0 +1,28 @@
+{
+  "name": "rabbitclone-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Authenticated room UI for browser-to-RTSP streaming workers.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "set NODE_ENV=development&& node src/server.js",
+    "check": "node --check src/server.js && node --check src/store.js && node --check src/docker-manager.js && node --check public/app.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "dockerode": "^4.0.2",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "sequelize": "^6.37.8",
+    "socket.io": "^4.8.3",
+    "sqlite3": "^6.0.1"
+  }
+}

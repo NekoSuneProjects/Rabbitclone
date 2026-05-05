@@ -1,0 +1,135 @@
+<%- include("partials/head") %>
+<%- include("partials/nav") %>
+
+<section class="room-header">
+  <div>
+    <h1><%= room.name %></h1>
+    <p class="muted">Chromium worker status: <span data-room-status="<%= room.id %>"><%= status.running ? "running" : status.status %></span></p>
+    <p class="muted">Idle shutdown: <%= idleMinutes %> minutes</p>
+  </div>
+  <div class="actions">
+    <form method="post" action="/rooms/<%= room.id %>/start">
+      <button type="submit">Start</button>
+    </form>
+    <form method="post" action="/rooms/<%= room.id %>/stop">
+      <button type="submit" class="secondary">Stop</button>
+    </form>
+  </div>
+</section>
+
+<section class="grid two">
+  <div class="panel">
+    <h2>Playback</h2>
+    <label>
+      VRChat RTSP URL
+      <input value="<%= streamUrl %>" readonly onclick="this.select()">
+    </label>
+    <p class="muted">This endpoint is regenerated whenever Start creates a new browser session. If VRChat runs on another device, set <code>RTSP_PUBLIC_BASE</code> to this machine's LAN or public address.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Browser URL</h2>
+    <form method="post" action="/rooms/<%= room.id %>/url" class="stack">
+      <label>
+        Current URL
+        <input name="startUrl" type="url" value="<%= room.startUrl %>" required>
+      </label>
+      <button type="submit">Open URL</button>
+    </form>
+  </div>
+</section>
+
+<section class="panel desktop-panel">
+  <div class="section-title">
+    <h2>Remote desktop</h2>
+    <% if (desktopUrl) { %>
+      <a class="button-link" href="<%= desktopUrl %>" target="_blank" rel="noreferrer">Open noVNC</a>
+    <% } %>
+  </div>
+  <% if (desktopUrl) { %>
+    <iframe title="Room desktop" src="<%= desktopUrl %>"></iframe>
+  <% } else { %>
+    <p class="empty">Start the room to create the Chromium desktop.</p>
+  <% } %>
+</section>
+
+<section class="grid two">
+  <div class="panel chat-panel">
+    <h2>Chat</h2>
+    <div id="chatMessages" class="message-list">
+      <% messages.forEach((message) => { %>
+        <article class="message">
+          <div>
+            <strong><%= message.username %></strong>
+            <time><%= new Date(message.createdAt).toLocaleTimeString() %></time>
+          </div>
+          <p><%= message.body %></p>
+        </article>
+      <% }) %>
+    </div>
+    <form id="chatForm" class="inline-form">
+      <input id="chatInput" maxlength="2000" autocomplete="off" placeholder="Message" required>
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <div class="panel call-panel">
+    <div class="section-title">
+      <h2>Voice and video</h2>
+      <div class="actions">
+        <button id="startCall" type="button">Start</button>
+        <button id="hangupCall" type="button" class="secondary">Hang up</button>
+      </div>
+    </div>
+    <div class="video-grid">
+      <video id="localVideo" muted playsinline autoplay></video>
+      <div id="remoteVideos" class="remote-videos"></div>
+    </div>
+  </div>
+</section>
+
+<section class="grid two">
+  <div class="panel">
+    <h2>Invite link</h2>
+    <form method="post" action="/rooms/<%= room.id %>/invites">
+      <button type="submit">Create invite link</button>
+    </form>
+    <div class="invite-list">
+      <% invites.forEach((invite) => { %>
+        <label>
+          Expires <%= new Date(invite.expiresAt).toLocaleString() %>
+          <input value="<%= appBaseUrl %>/invite/<%= invite.token %>" readonly onclick="this.select()">
+        </label>
+      <% }) %>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Members</h2>
+    <form method="post" action="/rooms/<%= room.id %>/members" class="inline-form">
+      <input name="username" placeholder="username" required>
+      <button type="submit">Invite user</button>
+    </form>
+    <% if (friends.length > 0) { %>
+      <div class="friend-add-list">
+        <% friends.forEach((friend) => { %>
+          <form method="post" action="/rooms/<%= room.id %>/members">
+            <input type="hidden" name="username" value="<%= friend.username %>">
+            <button type="submit" class="secondary">Add <%= friend.username %></button>
+          </form>
+        <% }) %>
+      </div>
+    <% } %>
+    <ul class="member-list">
+      <% members.forEach((member) => { %>
+        <li><%= member.username %></li>
+      <% }) %>
+    </ul>
+  </div>
+</section>
+
+<script>
+  window.RABBITCLONE_ROOM = <%- JSON.stringify({ id: room.id, user }) %>;
+</script>
+
+<%- include("partials/foot") %>

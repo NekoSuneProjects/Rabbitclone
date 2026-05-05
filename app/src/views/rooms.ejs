@@ -1,0 +1,41 @@
+<%- include("partials/head") %>
+<%- include("partials/nav") %>
+
+<section class="split">
+  <div>
+    <h1>Rooms</h1>
+    <div class="room-list">
+      <% if (rooms.length === 0) { %>
+        <p class="empty">Create a room to start a Chromium stream.</p>
+      <% } %>
+      <% rooms.forEach((room) => { %>
+        <article class="room-card">
+          <div>
+            <h2><a href="/rooms/<%= room.id %>"><%= room.name %></a></h2>
+            <p class="muted">Owner: <%= room.owner ? room.owner.username : "unknown" %></p>
+            <p class="mono"><%= room.streamUrl %></p>
+          </div>
+          <span class="status <%= room.status.running ? "running" : "" %>"><%= room.status.running ? "running" : room.status.status %></span>
+        </article>
+      <% }) %>
+    </div>
+  </div>
+
+  <aside class="panel">
+    <h2>Create room</h2>
+    <form method="post" action="/rooms" class="stack">
+      <label>
+        Room name
+        <input name="name" maxlength="80" required>
+      </label>
+      <label>
+        Start URL
+        <input name="startUrl" type="url" value="https://example.com/" required>
+      </label>
+      <button type="submit">Create room</button>
+    </form>
+  </aside>
+</section>
+
+<%- include("partials/foot") %>
+

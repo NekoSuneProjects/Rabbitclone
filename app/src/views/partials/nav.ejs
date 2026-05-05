@@ -1,0 +1,23 @@
+<header class="topbar">
+  <a class="brand" href="/rooms">RabbitClone</a>
+  <nav>
+    <% if (user) { %>
+      <a href="/rooms">Rooms</a>
+      <a href="/friends">Friends</a>
+      <form method="post" action="/logout">
+        <button type="submit">Log out <%= user.username %></button>
+      </form>
+    <% } else { %>
+      <a href="/login">Log in</a>
+      <a href="/register">Register</a>
+    <% } %>
+  </nav>
+</header>
+
+<main class="page">
+  <% if (notice) { %>
+    <div class="alert ok"><%= notice %></div>
+  <% } %>
+  <% if (error) { %>
+    <div class="alert bad"><%= error %></div>
+  <% } %>

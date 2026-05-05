@@ -1,0 +1,22 @@
+<%- include("partials/head") %>
+<%- include("partials/nav") %>
+
+<section class="auth-panel">
+  <h1>Register</h1>
+  <form method="post" action="/register" class="stack">
+    <input type="hidden" name="next" value="<%= next %>">
+    <label>
+      Username
+      <input name="username" autocomplete="username" pattern="[a-z0-9_]{3,32}" required>
+    </label>
+    <label>
+      Password
+      <input name="password" type="password" autocomplete="new-password" minlength="8" required>
+    </label>
+    <button type="submit">Create account</button>
+  </form>
+  <p class="muted">Already registered? <a href="/login?next=<%= encodeURIComponent(next) %>">Log in</a></p>
+</section>
+
+<%- include("partials/foot") %>
+

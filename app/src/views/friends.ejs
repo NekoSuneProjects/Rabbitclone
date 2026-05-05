@@ -1,0 +1,52 @@
+<%- include("partials/head") %>
+<%- include("partials/nav") %>
+
+<section class="split">
+  <div>
+    <h1>Friends</h1>
+    <div class="room-list">
+      <% if (friends.length === 0) { %>
+        <p class="empty">No friends yet.</p>
+      <% } %>
+      <% friends.forEach((friend) => { %>
+        <article class="room-card compact">
+          <h2><%= friend.username %></h2>
+          <span class="status running">friend</span>
+        </article>
+      <% }) %>
+    </div>
+
+    <h2 class="subhead">Requests</h2>
+    <div class="room-list">
+      <% if (requests.length === 0) { %>
+        <p class="empty">No pending requests.</p>
+      <% } %>
+      <% requests.forEach((request) => { %>
+        <article class="room-card compact">
+          <h2><%= request.requester ? request.requester.username : "unknown" %></h2>
+          <div class="actions">
+            <form method="post" action="/friends/<%= request.id %>/accept">
+              <button type="submit">Accept</button>
+            </form>
+            <form method="post" action="/friends/<%= request.id %>/reject">
+              <button type="submit" class="secondary">Reject</button>
+            </form>
+          </div>
+        </article>
+      <% }) %>
+    </div>
+  </div>
+
+  <aside class="panel">
+    <h2>Add friend</h2>
+    <form method="post" action="/friends" class="stack">
+      <label>
+        Username
+        <input name="username" placeholder="username" required>
+      </label>
+      <button type="submit">Send request</button>
+    </form>
+  </aside>
+</section>
+
+<%- include("partials/foot") %>
