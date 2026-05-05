@@ -4,7 +4,29 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= title %> - RabbitClone</title>
+  <script>
+    window.tailwind = window.tailwind || {};
+    window.tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            neko: {
+              50: "#ecfdf5",
+              100: "#d1fae5",
+              400: "#4ade80",
+              500: "#22c55e",
+              600: "#16a34a",
+              950: "#03120a"
+            }
+          },
+          boxShadow: {
+            glow: "0 0 32px rgba(34, 197, 94, 0.22)"
+          }
+        }
+      }
+    };
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/styles.css">
 </head>
-<body>
-
+<body class="bg-slate-950 text-slate-100 antialiased">

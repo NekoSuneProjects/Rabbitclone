@@ -43,7 +43,8 @@ class Store {
     this.User = this.sequelize.define("User", {
       id: { type: DataTypes.STRING, primaryKey: true },
       username: { type: DataTypes.STRING, allowNull: false, unique: true },
-      passwordHash: { type: DataTypes.STRING, allowNull: false }
+      passwordHash: { type: DataTypes.STRING, allowNull: false },
+      role: { type: DataTypes.STRING, allowNull: false, defaultValue: "user" }
     });
 
     this.Room = this.sequelize.define("Room", {
@@ -52,6 +53,9 @@ class Store {
       name: { type: DataTypes.STRING, allowNull: false },
       startUrl: { type: DataTypes.TEXT, allowNull: false },
       streamKey: { type: DataTypes.STRING, allowNull: false },
+      mediaNodeName: { type: DataTypes.STRING, allowNull: true },
+      rtspInternalBase: { type: DataTypes.TEXT, allowNull: true },
+      rtspPublicBase: { type: DataTypes.TEXT, allowNull: true },
       lastActiveAt: { type: DataTypes.DATE, allowNull: true },
       sessionStartedAt: { type: DataTypes.DATE, allowNull: true },
       stoppedDueToIdleAt: { type: DataTypes.DATE, allowNull: true }
@@ -85,12 +89,90 @@ class Store {
       userId: { type: DataTypes.STRING, allowNull: false },
       body: { type: DataTypes.TEXT, allowNull: false }
     });
+
+    this.BrowserSession = this.sequelize.define("BrowserSession", {
+      id: { type: DataTypes.STRING, primaryKey: true },
+      roomId: { type: DataTypes.STRING, allowNull: false },
+      streamKey: { type: DataTypes.STRING, allowNull: false },
+      mediaNodeName: { type: DataTypes.STRING, allowNull: true },
+      rtspInternalBase: { type: DataTypes.TEXT, allowNull: true },
+      rtspPublicBase: { type: DataTypes.TEXT, allowNull: true },
+      status: { type: DataTypes.STRING, allowNull: false },
+      startedAt: { type: DataTypes.DATE, allowNull: false },
+      lastActiveAt: { type: DataTypes.DATE, allowNull: true },
+      stoppedAt: { type: DataTypes.DATE, allowNull: true },
+      stopReason: { type: DataTypes.STRING, allowNull: true }
+    }, {
+      indexes: [{ fields: ["roomId", "status"] }]
+    });
   }
 
   async init() {
     await this.sequelize.authenticate();
     await this.sequelize.sync();
+    await this.ensureSchema();
     await this.importLegacyJson();
+    await this.ensureAdminUsers();
+  }
+
+  async ensureColumn(tableName, columnName, definition) {
+    const queryInterface = this.sequelize.getQueryInterface();
+    const description = await queryInterface.describeTable(tableName);
+    if (description[columnName]) return;
+    await queryInterface.addColumn(tableName, columnName, definition);
+  }
+
+  async ensureSchema() {
+    await this.ensureColumn("Users", "role", {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "user"
+    });
+    await this.ensureColumn("Rooms", "mediaNodeName", {
+      type: DataTypes.STRING,
+      allowNull: true
+    });
+    await this.ensureColumn("Rooms", "rtspInternalBase", {
+      type: DataTypes.TEXT,
+      allowNull: true
+    });
+    await this.ensureColumn("Rooms", "rtspPublicBase", {
+      type: DataTypes.TEXT,
+      allowNull: true
+    });
+    await this.ensureColumn("BrowserSessions", "mediaNodeName", {
+      type: DataTypes.STRING,
+      allowNull: true
+    });
+    await this.ensureColumn("BrowserSessions", "rtspInternalBase", {
+      type: DataTypes.TEXT,
+      allowNull: true
+    });
+    await this.ensureColumn("BrowserSessions", "rtspPublicBase", {
+      type: DataTypes.TEXT,
+      allowNull: true
+    });
+  }
+
+  async ensureAdminUsers() {
+    const configuredAdmins = String(process.env.ADMIN_USERS || "")
+      .split(",")
+      .map((username) => username.trim().toLowerCase())
+      .filter(Boolean);
+
+    if (configuredAdmins.length > 0) {
+      await this.User.update(
+        { role: "admin" },
+        { where: { username: { [Op.in]: configuredAdmins } } }
+      );
+    }
+
+    if (await this.User.count({ where: { role: "admin" } }) > 0) return;
+
+    const firstUser = await this.User.findOne({ order: [["createdAt", "ASC"]] });
+    if (firstUser) {
+      await firstUser.update({ role: "admin" });
+    }
   }
 
   async importLegacyJson() {
@@ -110,6 +192,7 @@ class Store {
           id: user.id,
           username: user.username,
           passwordHash: user.passwordHash,
+          role: user.role || "user",
           createdAt: user.createdAt ? new Date(user.createdAt) : new Date(),
           updatedAt: user.updatedAt ? new Date(user.updatedAt) : new Date()
         }, { transaction });
@@ -156,6 +239,7 @@ class Store {
       id: user.id,
       username: user.username,
       passwordHash: user.passwordHash,
+      role: user.role || "user",
       createdAt: dateString(user.createdAt),
       updatedAt: dateString(user.updatedAt)
     };
@@ -174,6 +258,9 @@ class Store {
       name: room.name,
       startUrl: room.startUrl,
       streamKey: room.streamKey,
+      mediaNodeName: room.mediaNodeName,
+      rtspInternalBase: room.rtspInternalBase,
+      rtspPublicBase: room.rtspPublicBase,
       members: members.map((member) => member.userId),
       lastActiveAt: dateString(room.lastActiveAt),
       sessionStartedAt: dateString(room.sessionStartedAt),
@@ -207,10 +294,12 @@ class Store {
   }
 
   async createUser(username, passwordHash) {
+    const isFirstUser = await this.User.count() === 0;
     const user = await this.User.create({
       id: id("usr"),
       username,
-      passwordHash
+      passwordHash,
+      role: isFirstUser ? "admin" : "user"
     });
     return this.userToPlain(user);
   }
@@ -228,7 +317,9 @@ class Store {
     const users = await this.User.findAll({ order: [["username", "ASC"]] });
     return users.map((user) => ({
       id: user.id,
-      username: user.username
+      username: user.username,
+      role: user.role || "user",
+      createdAt: dateString(user.createdAt)
     }));
   }
 
@@ -277,10 +368,12 @@ class Store {
     return this.roomToPlain(room);
   }
 
-  async rotateRoomStreamKey(roomId) {
+  async rotateRoomStreamKey(roomId, mediaNode = {}) {
     return this.updateRoom(roomId, {
       streamKey: streamKey(),
-      sessionStartedAt: new Date(),
+      mediaNodeName: mediaNode.name || "local",
+      rtspInternalBase: mediaNode.internalBase || null,
+      rtspPublicBase: mediaNode.publicBase || null,
       stoppedDueToIdleAt: null,
       lastActiveAt: new Date()
     });
@@ -290,6 +383,10 @@ class Store {
     const room = await this.Room.findByPk(roomId);
     if (!room) return null;
     await room.update({ lastActiveAt: new Date() });
+    await this.BrowserSession.update(
+      { lastActiveAt: new Date() },
+      { where: { roomId, status: "running" } }
+    );
     return this.roomToPlain(room);
   }
 
@@ -300,7 +397,41 @@ class Store {
       sessionStartedAt: null,
       stoppedDueToIdleAt: fields.idle ? new Date() : room.stoppedDueToIdleAt
     });
+    await this.endBrowserSession(roomId, fields.idle ? "idle" : "manual");
     return this.roomToPlain(room);
+  }
+
+  async startBrowserSession(room) {
+    const roomId = room.id;
+    await this.endBrowserSession(roomId, "replaced");
+    const now = new Date();
+    const session = await this.BrowserSession.create({
+      id: id("sess"),
+      roomId,
+      streamKey: room.streamKey,
+      mediaNodeName: room.mediaNodeName || "local",
+      rtspInternalBase: room.rtspInternalBase || null,
+      rtspPublicBase: room.rtspPublicBase || null,
+      status: "running",
+      startedAt: now,
+      lastActiveAt: now
+    });
+    await this.Room.update({
+      sessionStartedAt: now,
+      lastActiveAt: now,
+      stoppedDueToIdleAt: null
+    }, { where: { id: roomId } });
+    return session;
+  }
+
+  async endBrowserSession(roomId, stopReason = "manual") {
+    await this.BrowserSession.update({
+      status: "stopped",
+      stoppedAt: new Date(),
+      stopReason
+    }, {
+      where: { roomId, status: "running" }
+    });
   }
 
   async listIdleRooms(cutoffDate) {
@@ -469,6 +600,61 @@ class Store {
     return messages
       .reverse()
       .map((message) => this.messageToPlain(message, usersById.get(message.userId)));
+  }
+
+  async adminDashboard() {
+    const [
+      userCount,
+      roomCount,
+      runningSessionCount,
+      totalSessionCount,
+      messageCount,
+      users,
+      rooms,
+      sessions
+    ] = await Promise.all([
+      this.User.count(),
+      this.Room.count(),
+      this.BrowserSession.count({ where: { status: "running" } }),
+      this.BrowserSession.count(),
+      this.Message.count(),
+      this.User.findAll({ order: [["createdAt", "DESC"]], limit: 20 }),
+      this.Room.findAll({ order: [["updatedAt", "DESC"]], limit: 20 }),
+      this.BrowserSession.findAll({ order: [["createdAt", "DESC"]], limit: 30 })
+    ]);
+
+    const ownerIds = [...new Set(rooms.map((room) => room.ownerId))];
+    const owners = ownerIds.length > 0
+      ? await this.User.findAll({ where: { id: { [Op.in]: ownerIds } } })
+      : [];
+    const ownersById = new Map(owners.map((owner) => [owner.id, owner]));
+
+    return {
+      stats: {
+        userCount,
+        roomCount,
+        runningSessionCount,
+        totalSessionCount,
+        messageCount
+      },
+      users: users.map((user) => this.userToPlain(user)),
+      rooms: await Promise.all(rooms.map(async (room) => ({
+        ...(await this.roomToPlain(room)),
+        owner: this.userToPlain(ownersById.get(room.ownerId))
+      }))),
+      sessions: sessions.map((session) => ({
+        id: session.id,
+        roomId: session.roomId,
+        streamKey: session.streamKey,
+        mediaNodeName: session.mediaNodeName,
+        rtspPublicBase: session.rtspPublicBase,
+        status: session.status,
+        startedAt: dateString(session.startedAt),
+        lastActiveAt: dateString(session.lastActiveAt),
+        stoppedAt: dateString(session.stoppedAt),
+        stopReason: session.stopReason
+      }))
+    };
   }
 }
 

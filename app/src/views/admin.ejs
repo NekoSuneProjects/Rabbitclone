@@ -1,0 +1,85 @@
+<%- include("partials/head") %>
+<%- include("partials/nav") %>
+
+<section class="space-y-6">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <p class="text-sm font-bold uppercase tracking-[0.2em] text-emerald-300">Admin</p>
+      <h1 class="mt-2 text-4xl font-black tracking-tight text-white">Dashboard</h1>
+      <p class="mt-2 break-all text-sm text-slate-400">SQLite: <span class="font-mono text-emerald-200"><%= sqliteFile %></span></p>
+    </div>
+    <div class="rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-slate-300">Idle shutdown: <span class="font-black text-emerald-300"><%= idleMinutes %>m</span></div>
+  </div>
+
+  <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <div class="rounded-3xl border border-slate-800 bg-slate-900/80 p-5"><p class="text-sm text-slate-400">Users</p><p class="mt-2 text-3xl font-black text-white"><%= dashboard.stats.userCount %></p></div>
+    <div class="rounded-3xl border border-slate-800 bg-slate-900/80 p-5"><p class="text-sm text-slate-400">Rooms</p><p class="mt-2 text-3xl font-black text-white"><%= dashboard.stats.roomCount %></p></div>
+    <div class="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-5"><p class="text-sm text-emerald-200">Running</p><p class="mt-2 text-3xl font-black text-emerald-100"><%= dashboard.stats.runningSessionCount %></p></div>
+    <div class="rounded-3xl border border-slate-800 bg-slate-900/80 p-5"><p class="text-sm text-slate-400">Sessions</p><p class="mt-2 text-3xl font-black text-white"><%= dashboard.stats.totalSessionCount %></p></div>
+    <div class="rounded-3xl border border-slate-800 bg-slate-900/80 p-5"><p class="text-sm text-slate-400">Messages</p><p class="mt-2 text-3xl font-black text-white"><%= dashboard.stats.messageCount %></p></div>
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)]">
+    <section class="rounded-3xl border border-slate-800 bg-slate-900/80 p-5">
+      <h2 class="text-xl font-black text-white">Recent sessions</h2>
+      <div class="mt-4 overflow-x-auto scrollbar-soft">
+        <table class="w-full min-w-[760px] text-left text-sm">
+          <thead class="text-xs uppercase tracking-wider text-slate-500">
+            <tr>
+              <th class="py-3">Room</th>
+              <th class="py-3">Node</th>
+              <th class="py-3">Status</th>
+              <th class="py-3">Docker</th>
+              <th class="py-3">Started</th>
+              <th class="py-3">Stopped</th>
+              <th class="py-3">Reason</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800">
+            <% dashboard.sessions.forEach((session) => { %>
+              <tr class="text-slate-300">
+                <td class="py-3"><%= session.room ? session.room.name : session.roomId %></td>
+                <td class="py-3"><%= session.mediaNodeName || "local" %></td>
+                <td class="py-3"><span class="rounded-full px-2 py-1 text-xs font-black <%= session.status === "running" ? "bg-emerald-500/10 text-emerald-300" : "bg-slate-800 text-slate-400" %>"><%= session.status %></span></td>
+                <td class="py-3"><%= session.dockerStatus ? (session.dockerStatus.running ? "running" : session.dockerStatus.status) : "unknown" %></td>
+                <td class="py-3"><%= session.startedAt ? new Date(session.startedAt).toLocaleString() : "" %></td>
+                <td class="py-3"><%= session.stoppedAt ? new Date(session.stoppedAt).toLocaleString() : "" %></td>
+                <td class="py-3"><%= session.stopReason || "" %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="rounded-3xl border border-slate-800 bg-slate-900/80 p-5">
+      <h2 class="text-xl font-black text-white">Recent users</h2>
+      <div class="mt-4 grid gap-3">
+        <% dashboard.users.forEach((account) => { %>
+          <div class="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950 p-3">
+            <div>
+              <p class="font-black text-white"><%= account.username %></p>
+              <p class="text-xs text-slate-500"><%= account.createdAt ? new Date(account.createdAt).toLocaleString() : "" %></p>
+            </div>
+            <span class="rounded-full px-2 py-1 text-xs font-black <%= account.role === "admin" ? "bg-emerald-500/10 text-emerald-300" : "bg-slate-800 text-slate-400" %>"><%= account.role %></span>
+          </div>
+        <% }) %>
+      </div>
+    </section>
+  </div>
+
+  <section class="rounded-3xl border border-slate-800 bg-slate-900/80 p-5">
+    <h2 class="text-xl font-black text-white">Rooms</h2>
+    <div class="mt-4 grid gap-3 md:grid-cols-2">
+      <% dashboard.rooms.forEach((room) => { %>
+        <a class="rounded-2xl border border-slate-800 bg-slate-950 p-4 hover:border-emerald-500/40" href="/rooms/<%= room.id %>">
+          <p class="font-black text-white"><%= room.name %></p>
+          <p class="mt-1 text-sm text-slate-400">Owner: <%= room.owner ? room.owner.username : "unknown" %></p>
+          <p class="mt-2 text-xs text-slate-500">Members: <%= room.members.length %> · Updated <%= room.updatedAt ? new Date(room.updatedAt).toLocaleString() : "" %></p>
+        </a>
+      <% }) %>
+    </div>
+  </section>
+</section>
+
+<%- include("partials/foot") %>

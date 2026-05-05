@@ -1,22 +1,29 @@
 <%- include("partials/head") %>
 <%- include("partials/nav") %>
 
-<section class="auth-panel">
-  <h1>Log in</h1>
-  <form method="post" action="/login" class="stack">
-    <input type="hidden" name="next" value="<%= next %>">
-    <label>
-      Username
-      <input name="username" autocomplete="username" required>
-    </label>
-    <label>
-      Password
-      <input name="password" type="password" autocomplete="current-password" required>
-    </label>
-    <button type="submit">Log in</button>
-  </form>
-  <p class="muted">No account yet? <a href="/register?next=<%= encodeURIComponent(next) %>">Register</a></p>
+<section class="mx-auto grid min-h-[70vh] max-w-6xl items-center gap-10 lg:grid-cols-[1fr_420px]">
+  <div class="hidden lg:block">
+    <div class="inline-flex rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-200">Private browser rooms for VRChat</div>
+    <h1 class="mt-6 max-w-3xl text-5xl font-black tracking-tight text-white">Watch, browse, chat, and stream into VRChat.</h1>
+    <p class="mt-5 max-w-2xl text-lg text-slate-400">Each room launches an isolated Chromium session, publishes a fresh RTSP endpoint, and keeps your account data in SQLite.</p>
+  </div>
+
+  <section class="rounded-3xl border border-emerald-500/20 bg-slate-900/80 p-8 shadow-2xl shadow-emerald-950/20">
+    <h1 class="text-3xl font-black text-white">Log in</h1>
+    <form method="post" action="/login" class="mt-6 grid gap-5">
+      <input type="hidden" name="next" value="<%= next %>">
+      <label class="grid gap-2 text-sm font-semibold text-slate-300">
+        Username
+        <input class="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10" name="username" autocomplete="username" required>
+      </label>
+      <label class="grid gap-2 text-sm font-semibold text-slate-300">
+        Password
+        <input class="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10" name="password" type="password" autocomplete="current-password" required>
+      </label>
+      <button class="rounded-2xl bg-emerald-500 px-5 py-3 font-black text-slate-950 shadow-glow hover:bg-emerald-400" type="submit">Log in</button>
+    </form>
+    <p class="mt-5 text-sm text-slate-400">No account yet? <a class="font-bold text-emerald-300 hover:text-emerald-200" href="/register?next=<%= encodeURIComponent(next) %>">Register</a></p>
+  </section>
 </section>
 
 <%- include("partials/foot") %>
-

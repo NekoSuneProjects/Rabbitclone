@@ -18,6 +18,8 @@ RUN apt-get update \
     fonts-liberation \
     fonts-noto-color-emoji \
     novnc \
+    pulseaudio \
+    pulseaudio-utils \
     websockify \
     x11vnc \
     xvfb \
@@ -34,4 +36,3 @@ RUN chmod +x /entrypoint.sh
 
 EXPOSE 3001 5900 6080
 ENTRYPOINT ["dumb-init", "--", "/entrypoint.sh"]
-

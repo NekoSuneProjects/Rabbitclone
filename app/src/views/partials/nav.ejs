@@ -1,23 +1,31 @@
-<header class="topbar">
-  <a class="brand" href="/rooms">RabbitClone</a>
-  <nav>
+<header class="sticky top-0 z-40 border-b border-emerald-500/10 bg-slate-950/90 backdrop-blur">
+  <div class="mx-auto flex min-h-16 max-w-[1600px] items-center justify-between px-4 sm:px-6">
+    <a class="flex items-center gap-3 text-lg font-black tracking-tight text-white" href="/rooms">
+      <span class="grid h-9 w-9 place-items-center rounded-2xl bg-emerald-500 text-slate-950 shadow-glow">R</span>
+      <span>RabbitClone</span>
+    </a>
+    <nav class="flex items-center gap-2 text-sm font-medium text-slate-300">
     <% if (user) { %>
-      <a href="/rooms">Rooms</a>
-      <a href="/friends">Friends</a>
-      <form method="post" action="/logout">
-        <button type="submit">Log out <%= user.username %></button>
+      <a class="rounded-xl px-3 py-2 hover:bg-slate-800 hover:text-white" href="/rooms">Rooms</a>
+      <a class="rounded-xl px-3 py-2 hover:bg-slate-800 hover:text-white" href="/friends">Friends</a>
+      <% if (user.role === "admin") { %>
+        <a class="rounded-xl px-3 py-2 text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-100" href="/admin">Admin</a>
+      <% } %>
+      <form method="post" action="/logout" class="m-0">
+        <button class="rounded-xl border border-slate-700 px-3 py-2 text-slate-300 hover:border-emerald-500/60 hover:text-white" type="submit"><%= user.username %> · Log out</button>
       </form>
     <% } else { %>
-      <a href="/login">Log in</a>
-      <a href="/register">Register</a>
+      <a class="rounded-xl px-3 py-2 hover:bg-slate-800 hover:text-white" href="/login">Log in</a>
+      <a class="rounded-xl bg-emerald-500 px-3 py-2 font-bold text-slate-950 hover:bg-emerald-400" href="/register">Register</a>
     <% } %>
-  </nav>
+    </nav>
+  </div>
 </header>
 
-<main class="page">
+<main class="mx-auto max-w-[1600px] px-4 py-6 sm:px-6">
   <% if (notice) { %>
-    <div class="alert ok"><%= notice %></div>
+    <div class="mb-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100"><%= notice %></div>
   <% } %>
   <% if (error) { %>
-    <div class="alert bad"><%= error %></div>
+    <div class="mb-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100"><%= error %></div>
   <% } %>

@@ -10,18 +10,23 @@ services:
       DATA_FILE: /data/rabbitclone.json
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8080}
       AUTH_SECRET: ${AUTH_SECRET:-change-this-to-a-long-random-string}
+      ADMIN_USERS: ${ADMIN_USERS:-}
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
       IDLE_SHUTDOWN_MINUTES: ${IDLE_SHUTDOWN_MINUTES:-10}
       WORKER_IMAGE: ${WORKER_IMAGE:-ghcr.io/nekosuneprojects/rabbitclone-worker:main}
       AUTO_PULL_WORKER_IMAGE: ${AUTO_PULL_WORKER_IMAGE:-1}
       WORKER_NETWORK: ${WORKER_NETWORK:-rabbitclone_net}
+      MEDIA_NODES: ${MEDIA_NODES:-}
       RTSP_INTERNAL_BASE: ${RTSP_INTERNAL_BASE:-rtsp://mediamtx:8554}
-      RTSP_PUBLIC_BASE: ${RTSP_PUBLIC_BASE:-rtsp://localhost:8554}
+      RTSP_PUBLIC_BASE: ${RTSP_PUBLIC_BASE:-rtspt://localhost:8554}
       CAPTURE_SIZE: ${CAPTURE_SIZE:-1280x720}
       FPS: ${FPS:-30}
       VIDEO_BITRATE: ${VIDEO_BITRATE:-2500k}
+      AUDIO_BITRATE: ${AUDIO_BITRATE:-128k}
+      ENABLE_BROWSER_AUDIO: ${ENABLE_BROWSER_AUDIO:-1}
       RUNNING_IN_DOCKER: "1"
     volumes:
-      - rabbitclone_data:/data
+      - ./data:/data
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - mediamtx
@@ -36,17 +41,6 @@ services:
       - ./mediamtx.yml:/mediamtx.yml:ro
     networks:
       - rabbitclone_net
-
-  worker-image:
-    image: ghcr.io/nekosuneprojects/rabbitclone-worker:main
-    profiles:
-      - build
-    command: ["bash", "-lc", "echo worker image built"]
-    networks:
-      - rabbitclone_net
-
-volumes:
-  rabbitclone_data:
 
 networks:
   rabbitclone_net:

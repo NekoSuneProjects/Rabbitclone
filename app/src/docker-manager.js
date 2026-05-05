@@ -16,6 +16,51 @@ function trimTrailingSlash(value) {
   return value.replace(/\/+$/, "");
 }
 
+function normalizeBase(value) {
+  return trimTrailingSlash(String(value || ""));
+}
+
+function parseMediaNodes() {
+  const fallback = [{
+    name: "local",
+    internalBase: normalizeBase(process.env.RTSP_INTERNAL_BASE || "rtsp://mediamtx:8554"),
+    publicBase: normalizeBase(process.env.RTSP_PUBLIC_BASE || "rtspt://localhost:8554")
+  }];
+
+  const raw = String(process.env.MEDIA_NODES || "").trim();
+  if (!raw) return fallback;
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      const nodes = parsed
+        .map((node, index) => ({
+          name: String(node.name || `node-${index + 1}`),
+          internalBase: normalizeBase(node.internalBase),
+          publicBase: normalizeBase(node.publicBase)
+        }))
+        .filter((node) => node.internalBase && node.publicBase);
+      if (nodes.length > 0) return nodes;
+    }
+  } catch {
+    // Fall through to compact env syntax.
+  }
+
+  const nodes = raw
+    .split(",")
+    .map((entry, index) => {
+      const [name, internalBase, publicBase] = entry.split("|").map((part) => part.trim());
+      return {
+        name: name || `node-${index + 1}`,
+        internalBase: normalizeBase(internalBase),
+        publicBase: normalizeBase(publicBase)
+      };
+    })
+    .filter((node) => node.internalBase && node.publicBase);
+
+  return nodes.length > 0 ? nodes : fallback;
+}
+
 function readHostPort(inspect, containerPort) {
   const bindings = inspect.NetworkSettings?.Ports?.[`${containerPort}/tcp`];
   if (!bindings || bindings.length === 0) return null;
@@ -28,11 +73,14 @@ class DockerManager {
     this.workerImage = process.env.WORKER_IMAGE || "ghcr.io/nekosuneprojects/rabbitclone-worker:main";
     this.autoPullWorkerImage = process.env.AUTO_PULL_WORKER_IMAGE !== "0";
     this.workerNetwork = process.env.WORKER_NETWORK || "rabbitclone_net";
-    this.rtspInternalBase = trimTrailingSlash(process.env.RTSP_INTERNAL_BASE || "rtsp://mediamtx:8554");
-    this.rtspPublicBase = trimTrailingSlash(process.env.RTSP_PUBLIC_BASE || "rtsp://localhost:8554");
+    this.mediaNodes = parseMediaNodes();
+    this.rtspInternalBase = this.mediaNodes[0].internalBase;
+    this.rtspPublicBase = this.mediaNodes[0].publicBase;
     this.captureSize = process.env.CAPTURE_SIZE || "1280x720";
     this.fps = process.env.FPS || "30";
     this.videoBitrate = process.env.VIDEO_BITRATE || "2500k";
+    this.audioBitrate = process.env.AUDIO_BITRATE || "128k";
+    this.enableBrowserAudio = process.env.ENABLE_BROWSER_AUDIO !== "0";
     this.inDocker = process.env.RUNNING_IN_DOCKER === "1";
   }
 
@@ -58,6 +106,10 @@ class DockerManager {
     const match = containers.find((container) => container.Names.includes(`/${name}`)) || containers[0];
     if (!match) return null;
     return this.docker.getContainer(match.Id);
+  }
+
+  pickMediaNode() {
+    return this.mediaNodes[Math.floor(Math.random() * this.mediaNodes.length)];
   }
 
   async ensureWorkerImage() {
@@ -131,7 +183,8 @@ class DockerManager {
   }
 
   streamUrl(room) {
-    return `${this.rtspPublicBase}/${room.streamKey}`;
+    const publicBase = normalizeBase(room.rtspPublicBase || this.rtspPublicBase);
+    return `${publicBase}/${room.streamKey}`;
   }
 
   async startRoom(room) {
@@ -145,21 +198,25 @@ class DockerManager {
     await this.ensureWorkerImage();
 
     const name = this.workerName(room.id);
+    const internalBase = normalizeBase(room.rtspInternalBase || this.rtspInternalBase);
     const container = await this.docker.createContainer({
       Image: this.workerImage,
       name,
       Env: [
         `ROOM_ID=${room.id}`,
         `START_URL=${room.startUrl}`,
-        `RTSP_URL=${this.rtspInternalBase}/${room.streamKey}`,
+        `RTSP_URL=${internalBase}/${room.streamKey}`,
         `CAPTURE_SIZE=${this.captureSize}`,
         `VIEWPORT=${this.captureSize}`,
         `FPS=${this.fps}`,
-        `VIDEO_BITRATE=${this.videoBitrate}`
+        `VIDEO_BITRATE=${this.videoBitrate}`,
+        `AUDIO_BITRATE=${this.audioBitrate}`,
+        `ENABLE_BROWSER_AUDIO=${this.enableBrowserAudio ? "1" : "0"}`
       ],
       Labels: {
         "rabbitclone.managed": "true",
-        "rabbitclone.roomId": room.id
+        "rabbitclone.roomId": room.id,
+        "rabbitclone.mediaNode": room.mediaNodeName || "local"
       },
       ExposedPorts: {
         "6080/tcp": {},

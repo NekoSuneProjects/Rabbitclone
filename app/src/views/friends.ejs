@@ -1,35 +1,40 @@
 <%- include("partials/head") %>
 <%- include("partials/nav") %>
 
-<section class="split">
+<section class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
   <div>
-    <h1>Friends</h1>
-    <div class="room-list">
+    <p class="text-sm font-bold uppercase tracking-[0.2em] text-emerald-300">Social</p>
+    <h1 class="mt-2 text-4xl font-black tracking-tight text-white">Friends</h1>
+
+    <div class="mt-6 grid gap-4">
       <% if (friends.length === 0) { %>
-        <p class="empty">No friends yet.</p>
+        <div class="rounded-3xl border border-dashed border-slate-700 bg-slate-900/60 p-8 text-slate-400">No friends yet.</div>
       <% } %>
       <% friends.forEach((friend) => { %>
-        <article class="room-card compact">
-          <h2><%= friend.username %></h2>
-          <span class="status running">friend</span>
+        <article class="flex items-center justify-between rounded-3xl border border-slate-800 bg-slate-900/80 p-5">
+          <div class="flex items-center gap-3">
+            <div class="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-500 font-black text-slate-950"><%= friend.username.slice(0, 1).toUpperCase() %></div>
+            <h2 class="text-lg font-black text-white"><%= friend.username %></h2>
+          </div>
+          <span class="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-300">friend</span>
         </article>
       <% }) %>
     </div>
 
-    <h2 class="subhead">Requests</h2>
-    <div class="room-list">
+    <h2 class="mt-10 text-2xl font-black text-white">Requests</h2>
+    <div class="mt-4 grid gap-4">
       <% if (requests.length === 0) { %>
-        <p class="empty">No pending requests.</p>
+        <div class="rounded-3xl border border-dashed border-slate-700 bg-slate-900/60 p-8 text-slate-400">No pending requests.</div>
       <% } %>
       <% requests.forEach((request) => { %>
-        <article class="room-card compact">
-          <h2><%= request.requester ? request.requester.username : "unknown" %></h2>
-          <div class="actions">
+        <article class="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-slate-800 bg-slate-900/80 p-5">
+          <h2 class="text-lg font-black text-white"><%= request.requester ? request.requester.username : "unknown" %></h2>
+          <div class="flex gap-2">
             <form method="post" action="/friends/<%= request.id %>/accept">
-              <button type="submit">Accept</button>
+              <button class="rounded-2xl bg-emerald-500 px-4 py-2 font-black text-slate-950 hover:bg-emerald-400" type="submit">Accept</button>
             </form>
             <form method="post" action="/friends/<%= request.id %>/reject">
-              <button type="submit" class="secondary">Reject</button>
+              <button class="rounded-2xl border border-slate-700 px-4 py-2 font-bold text-slate-300 hover:border-red-400/60 hover:text-red-200" type="submit">Reject</button>
             </form>
           </div>
         </article>
@@ -37,14 +42,14 @@
     </div>
   </div>
 
-  <aside class="panel">
-    <h2>Add friend</h2>
-    <form method="post" action="/friends" class="stack">
-      <label>
+  <aside class="rounded-3xl border border-emerald-500/20 bg-slate-900/80 p-6 shadow-glow">
+    <h2 class="text-2xl font-black text-white">Add friend</h2>
+    <form method="post" action="/friends" class="mt-5 grid gap-4">
+      <label class="grid gap-2 text-sm font-semibold text-slate-300">
         Username
-        <input name="username" placeholder="username" required>
+        <input class="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10" name="username" placeholder="username" required>
       </label>
-      <button type="submit">Send request</button>
+      <button class="rounded-2xl bg-emerald-500 px-5 py-3 font-black text-slate-950 shadow-glow hover:bg-emerald-400" type="submit">Send request</button>
     </form>
   </aside>
 </section>

@@ -1,41 +1,49 @@
 <%- include("partials/head") %>
 <%- include("partials/nav") %>
 
-<section class="split">
+<section class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
   <div>
-    <h1>Rooms</h1>
-    <div class="room-list">
+    <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="text-sm font-bold uppercase tracking-[0.2em] text-emerald-300">Rooms</p>
+        <h1 class="mt-2 text-4xl font-black tracking-tight text-white">Browser sessions</h1>
+      </div>
+      <a class="rounded-2xl border border-emerald-500/30 px-4 py-2 text-sm font-bold text-emerald-200 hover:bg-emerald-500/10" href="/friends">Manage friends</a>
+    </div>
+
+    <div class="grid gap-4">
       <% if (rooms.length === 0) { %>
-        <p class="empty">Create a room to start a Chromium stream.</p>
+        <div class="rounded-3xl border border-dashed border-slate-700 bg-slate-900/60 p-10 text-center text-slate-400">Create a room to start a Chromium stream.</div>
       <% } %>
       <% rooms.forEach((room) => { %>
-        <article class="room-card">
-          <div>
-            <h2><a href="/rooms/<%= room.id %>"><%= room.name %></a></h2>
-            <p class="muted">Owner: <%= room.owner ? room.owner.username : "unknown" %></p>
-            <p class="mono"><%= room.streamUrl %></p>
+        <article class="group rounded-3xl border border-slate-800 bg-slate-900/80 p-5 shadow-xl shadow-black/20 transition hover:border-emerald-500/40 hover:bg-slate-900">
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div class="min-w-0">
+              <h2 class="text-xl font-black text-white"><a class="hover:text-emerald-300" href="/rooms/<%= room.id %>"><%= room.name %></a></h2>
+              <p class="mt-1 text-sm text-slate-400">Owner: <%= room.owner ? room.owner.username : "unknown" %></p>
+              <p class="mt-3 break-all rounded-2xl border border-slate-800 bg-slate-950 px-3 py-2 font-mono text-xs text-emerald-200"><%= room.streamUrl %></p>
+            </div>
+            <span class="rounded-full border px-3 py-1 text-xs font-black <%= room.status.running ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-300" : "border-slate-700 bg-slate-800 text-slate-400" %>"><%= room.status.running ? "running" : room.status.status %></span>
           </div>
-          <span class="status <%= room.status.running ? "running" : "" %>"><%= room.status.running ? "running" : room.status.status %></span>
         </article>
       <% }) %>
     </div>
   </div>
 
-  <aside class="panel">
-    <h2>Create room</h2>
-    <form method="post" action="/rooms" class="stack">
-      <label>
+  <aside class="rounded-3xl border border-emerald-500/20 bg-slate-900/80 p-6 shadow-glow">
+    <h2 class="text-2xl font-black text-white">Create room</h2>
+    <form method="post" action="/rooms" class="mt-5 grid gap-4">
+      <label class="grid gap-2 text-sm font-semibold text-slate-300">
         Room name
-        <input name="name" maxlength="80" required>
+        <input class="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10" name="name" maxlength="80" required>
       </label>
-      <label>
+      <label class="grid gap-2 text-sm font-semibold text-slate-300">
         Start URL
-        <input name="startUrl" type="url" value="https://example.com/" required>
+        <input class="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10" name="startUrl" type="url" value="https://example.com/" required>
       </label>
-      <button type="submit">Create room</button>
+      <button class="rounded-2xl bg-emerald-500 px-5 py-3 font-black text-slate-950 shadow-glow hover:bg-emerald-400" type="submit">Create room</button>
     </form>
   </aside>
 </section>
 
 <%- include("partials/foot") %>
-

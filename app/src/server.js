@@ -23,9 +23,17 @@ const AUTH_SECRET = process.env.AUTH_SECRET || "dev-change-me";
 const IDLE_SHUTDOWN_MINUTES = Number(process.env.IDLE_SHUTDOWN_MINUTES || 10);
 const IDLE_SHUTDOWN_MS = Math.max(1, IDLE_SHUTDOWN_MINUTES) * 60 * 1000;
 
+function trustProxySetting() {
+  const raw = String(process.env.TRUST_PROXY_HOPS || "0").trim().toLowerCase();
+  if (raw === "true") return 1;
+  if (raw === "false" || raw === "0") return false;
+  const hops = Number(raw);
+  return Number.isFinite(hops) && hops > 0 ? hops : false;
+}
+
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
-app.set("trust proxy", true);
+app.set("trust proxy", trustProxySetting());
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.urlencoded({ extended: false }));
@@ -70,7 +78,8 @@ function publicUser(user) {
   if (!user) return null;
   return {
     id: user.id,
-    username: user.username
+    username: user.username,
+    role: user.role || "user"
   };
 }
 
@@ -89,7 +98,7 @@ function clearAuthCookie(res) {
 }
 
 function canAccessRoom(room, user) {
-  return room && user && (room.ownerId === user.id || room.members.includes(user.id));
+  return room && user && (user.role === "admin" || room.ownerId === user.id || room.members.includes(user.id));
 }
 
 function redirectWithMessage(res, pathName, type, message) {
@@ -123,6 +132,16 @@ function requireAuth(req, res, next) {
   if (!req.user) {
     const nextUrl = encodeURIComponent(req.originalUrl);
     return res.redirect(`/login?next=${nextUrl}`);
+  }
+  next();
+}
+
+function requireAdmin(req, res, next) {
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).render("error", {
+      title: "Admin only",
+      message: "You need an admin account to view this page."
+    });
   }
   next();
 }
@@ -225,6 +244,28 @@ app.post("/logout", (req, res) => {
   res.redirect("/login");
 });
 
+app.get("/admin", requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const dashboard = await store.adminDashboard();
+  const sessions = await Promise.all(dashboard.sessions.map(async (session) => {
+    const room = session.roomId ? await store.getRoom(session.roomId) : null;
+    return {
+      ...session,
+      room,
+      dockerStatus: room ? await docker.status(room) : null
+    };
+  }));
+
+  res.render("admin", {
+    title: "Admin",
+    dashboard: {
+      ...dashboard,
+      sessions
+    },
+    sqliteFile: store.storage,
+    idleMinutes: IDLE_SHUTDOWN_MINUTES
+  });
+}));
+
 app.get("/friends", requireAuth, asyncHandler(async (req, res) => {
   res.render("friends", {
     title: "Friends",
@@ -306,8 +347,12 @@ app.get("/rooms/:roomId", requireAuth, requireRoom, asyncHandler(async (req, res
 app.post("/rooms/:roomId/start", requireAuth, requireRoom, asyncHandler(async (req, res) => {
   try {
     const currentStatus = await docker.status(req.room);
-    const room = currentStatus.running ? await store.markRoomActive(req.room.id) : await store.rotateRoomStreamKey(req.room.id);
+    const mediaNode = currentStatus.running ? null : docker.pickMediaNode();
+    const room = currentStatus.running ? await store.markRoomActive(req.room.id) : await store.rotateRoomStreamKey(req.room.id, mediaNode);
     await docker.startRoom(room);
+    if (!currentStatus.running) {
+      await store.startBrowserSession(room);
+    }
     redirectWithMessage(res, `/rooms/${req.room.id}`, "notice", "Room worker started.");
   } catch (error) {
     redirectWithMessage(res, `/rooms/${req.room.id}`, "error", error.message);

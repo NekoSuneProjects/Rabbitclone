@@ -1,130 +1,158 @@
 <%- include("partials/head") %>
 <%- include("partials/nav") %>
 
-<section class="room-header">
-  <div>
-    <h1><%= room.name %></h1>
-    <p class="muted">Chromium worker status: <span data-room-status="<%= room.id %>"><%= status.running ? "running" : status.status %></span></p>
-    <p class="muted">Idle shutdown: <%= idleMinutes %> minutes</p>
-  </div>
-  <div class="actions">
-    <form method="post" action="/rooms/<%= room.id %>/start">
-      <button type="submit">Start</button>
-    </form>
-    <form method="post" action="/rooms/<%= room.id %>/stop">
-      <button type="submit" class="secondary">Stop</button>
-    </form>
-  </div>
-</section>
+<section class="overflow-hidden rounded-[2rem] border border-emerald-500/15 bg-slate-950 shadow-2xl shadow-black/40">
+  <div class="grid min-h-[calc(100vh-8rem)] lg:grid-cols-[72px_minmax(0,1fr)_360px]">
+    <aside class="hidden border-r border-slate-800 bg-slate-950/95 p-3 lg:grid lg:grid-rows-[auto_1fr_auto]">
+      <a class="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-500 font-black text-slate-950 shadow-glow" href="/rooms">R</a>
+      <nav class="mt-6 grid content-start gap-3 text-slate-400">
+        <a class="grid h-12 w-12 place-items-center rounded-2xl hover:bg-slate-900 hover:text-emerald-300" href="/rooms" title="Rooms">⌂</a>
+        <a class="grid h-12 w-12 place-items-center rounded-2xl hover:bg-slate-900 hover:text-emerald-300" href="/friends" title="Friends">☷</a>
+        <% if (user && user.role === "admin") { %>
+          <a class="grid h-12 w-12 place-items-center rounded-2xl text-emerald-300 hover:bg-emerald-500/10" href="/admin" title="Admin">⚙</a>
+        <% } %>
+      </nav>
+      <div class="grid h-12 w-12 place-items-center rounded-full bg-slate-800 text-sm font-black text-emerald-200"><%= user.username.slice(0, 1).toUpperCase() %></div>
+    </aside>
 
-<section class="grid two">
-  <div class="panel">
-    <h2>Playback</h2>
-    <label>
-      VRChat RTSP URL
-      <input value="<%= streamUrl %>" readonly onclick="this.select()">
-    </label>
-    <p class="muted">This endpoint is regenerated whenever Start creates a new browser session. If VRChat runs on another device, set <code>RTSP_PUBLIC_BASE</code> to this machine's LAN or public address.</p>
-  </div>
+    <section class="flex min-w-0 flex-col bg-slate-950">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/80 px-4 py-3">
+        <div class="min-w-0">
+          <h1 class="truncate text-lg font-black text-white"><%= room.name %></h1>
+          <p class="mt-1 text-xs text-slate-400">Status: <span class="font-black <%= status.running ? "text-emerald-300" : "text-slate-400" %>" data-room-status="<%= room.id %>"><%= status.running ? "running" : status.status %></span> · Node <%= room.mediaNodeName || "local" %> · Idle shutdown <%= idleMinutes %>m</p>
+        </div>
+        <form method="post" action="/rooms/<%= room.id %>/url" class="flex min-w-0 flex-1 gap-2 lg:max-w-2xl">
+          <input class="min-w-0 flex-1 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-2 text-sm text-white outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10" name="startUrl" type="url" value="<%= room.startUrl %>" required>
+          <button class="rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-black text-slate-950 hover:bg-emerald-400" type="submit">Open</button>
+        </form>
+      </div>
 
-  <div class="panel">
-    <h2>Browser URL</h2>
-    <form method="post" action="/rooms/<%= room.id %>/url" class="stack">
-      <label>
-        Current URL
-        <input name="startUrl" type="url" value="<%= room.startUrl %>" required>
-      </label>
-      <button type="submit">Open URL</button>
-    </form>
-  </div>
-</section>
-
-<section class="panel desktop-panel">
-  <div class="section-title">
-    <h2>Remote desktop</h2>
-    <% if (desktopUrl) { %>
-      <a class="button-link" href="<%= desktopUrl %>" target="_blank" rel="noreferrer">Open noVNC</a>
-    <% } %>
-  </div>
-  <% if (desktopUrl) { %>
-    <iframe title="Room desktop" src="<%= desktopUrl %>"></iframe>
-  <% } else { %>
-    <p class="empty">Start the room to create the Chromium desktop.</p>
-  <% } %>
-</section>
-
-<section class="grid two">
-  <div class="panel chat-panel">
-    <h2>Chat</h2>
-    <div id="chatMessages" class="message-list">
-      <% messages.forEach((message) => { %>
-        <article class="message">
-          <div>
-            <strong><%= message.username %></strong>
-            <time><%= new Date(message.createdAt).toLocaleTimeString() %></time>
+      <div class="watch-stage relative min-h-[360px] flex-1 bg-black">
+        <% if (desktopUrl) { %>
+          <iframe title="Room desktop" src="<%= desktopUrl %>"></iframe>
+        <% } else { %>
+          <div class="grid h-full min-h-[56vh] place-items-center bg-[radial-gradient(circle_at_center,rgba(34,197,94,0.12),transparent_45%),#020617] p-8 text-center">
+            <div>
+              <div class="mx-auto grid h-20 w-20 place-items-center rounded-3xl border border-emerald-500/30 bg-emerald-500/10 text-3xl text-emerald-300">▶</div>
+              <h2 class="mt-5 text-3xl font-black text-white">Start a browser session</h2>
+              <p class="mt-2 max-w-lg text-slate-400">A new RTSP endpoint is generated for every fresh browser session.</p>
+            </div>
           </div>
-          <p><%= message.body %></p>
-        </article>
-      <% }) %>
-    </div>
-    <form id="chatForm" class="inline-form">
-      <input id="chatInput" maxlength="2000" autocomplete="off" placeholder="Message" required>
-      <button type="submit">Send</button>
-    </form>
-  </div>
-
-  <div class="panel call-panel">
-    <div class="section-title">
-      <h2>Voice and video</h2>
-      <div class="actions">
-        <button id="startCall" type="button">Start</button>
-        <button id="hangupCall" type="button" class="secondary">Hang up</button>
+        <% } %>
       </div>
-    </div>
-    <div class="video-grid">
-      <video id="localVideo" muted playsinline autoplay></video>
-      <div id="remoteVideos" class="remote-videos"></div>
-    </div>
-  </div>
-</section>
 
-<section class="grid two">
-  <div class="panel">
-    <h2>Invite link</h2>
-    <form method="post" action="/rooms/<%= room.id %>/invites">
-      <button type="submit">Create invite link</button>
-    </form>
-    <div class="invite-list">
-      <% invites.forEach((invite) => { %>
-        <label>
-          Expires <%= new Date(invite.expiresAt).toLocaleString() %>
-          <input value="<%= appBaseUrl %>/invite/<%= invite.token %>" readonly onclick="this.select()">
-        </label>
-      <% }) %>
-    </div>
-  </div>
-
-  <div class="panel">
-    <h2>Members</h2>
-    <form method="post" action="/rooms/<%= room.id %>/members" class="inline-form">
-      <input name="username" placeholder="username" required>
-      <button type="submit">Invite user</button>
-    </form>
-    <% if (friends.length > 0) { %>
-      <div class="friend-add-list">
-        <% friends.forEach((friend) => { %>
-          <form method="post" action="/rooms/<%= room.id %>/members">
-            <input type="hidden" name="username" value="<%= friend.username %>">
-            <button type="submit" class="secondary">Add <%= friend.username %></button>
+      <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-800 bg-slate-900 px-4 py-3">
+        <div class="flex items-center gap-2">
+          <form method="post" action="/rooms/<%= room.id %>/start">
+            <button class="rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-black text-slate-950 hover:bg-emerald-400" type="submit">Start</button>
           </form>
-        <% }) %>
+          <form method="post" action="/rooms/<%= room.id %>/stop">
+            <button class="rounded-2xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-300 hover:border-red-400/60 hover:text-red-200" type="submit">Stop</button>
+          </form>
+          <% if (desktopUrl) { %>
+            <a class="rounded-2xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-300 hover:border-emerald-500/60 hover:text-emerald-200" href="<%= desktopUrl %>" target="_blank" rel="noreferrer">noVNC</a>
+          <% } %>
+        </div>
+        <input class="min-w-0 max-w-xl flex-1 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-2 font-mono text-xs text-emerald-200 outline-none" value="<%= streamUrl %>" readonly onclick="this.select()">
       </div>
-    <% } %>
-    <ul class="member-list">
-      <% members.forEach((member) => { %>
-        <li><%= member.username %></li>
-      <% }) %>
-    </ul>
+    </section>
+
+    <aside class="flex min-h-[520px] flex-col border-l border-slate-800 bg-slate-900">
+      <div class="flex items-center gap-3 border-b border-slate-800 p-4">
+        <div class="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-500 font-black text-slate-950"><%= user.username.slice(0, 1).toUpperCase() %></div>
+        <div>
+          <p class="font-black text-white"><%= user.username %></p>
+          <p class="text-sm text-emerald-300">● online</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-4 border-b border-slate-800 text-sm font-black text-slate-400">
+        <button class="watch-tab border-b-2 border-emerald-400 bg-slate-950 py-3 text-white" data-watch-tab="chat" type="button">Chat</button>
+        <button class="watch-tab py-3 hover:bg-slate-950 hover:text-white" data-watch-tab="invite" type="button">Invite</button>
+        <button class="watch-tab py-3 hover:bg-slate-950 hover:text-white" data-watch-tab="call" type="button">Call</button>
+        <button class="watch-tab py-3 hover:bg-slate-950 hover:text-white" data-watch-tab="members" type="button">Users</button>
+      </div>
+
+      <div class="min-h-0 flex-1 overflow-hidden">
+        <section class="watch-panel flex h-full flex-col" data-watch-panel="chat">
+          <div id="chatMessages" class="message-list scrollbar-soft flex-1 space-y-3 overflow-y-auto p-4">
+            <% messages.forEach((message) => { %>
+              <article class="rounded-2xl bg-slate-950 p-3">
+                <div class="flex items-center justify-between gap-3">
+                  <strong class="text-sm text-white"><%= message.username %></strong>
+                  <time class="text-xs text-slate-500"><%= new Date(message.createdAt).toLocaleTimeString() %></time>
+                </div>
+                <p class="mt-1 break-words text-sm text-slate-300"><%= message.body %></p>
+              </article>
+            <% }) %>
+          </div>
+          <form id="chatForm" class="flex gap-2 border-t border-slate-800 p-3">
+            <input id="chatInput" class="min-w-0 flex-1 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-emerald-400" maxlength="2000" autocomplete="off" placeholder="Type a message" required>
+            <button class="rounded-2xl bg-emerald-500 px-4 py-3 font-black text-slate-950 hover:bg-emerald-400" type="submit">Send</button>
+          </form>
+        </section>
+
+        <section class="watch-panel hidden h-full overflow-y-auto p-5 scrollbar-soft" data-watch-panel="invite">
+          <div class="grid min-h-full place-items-center text-center">
+            <div class="w-full">
+              <h2 class="text-2xl font-black text-white">Invite your friends</h2>
+              <p class="mt-2 text-sm text-slate-400">Invite others so you can watch and chat together.</p>
+              <form method="post" action="/rooms/<%= room.id %>/invites" class="mt-5">
+                <button class="rounded-2xl bg-emerald-500 px-5 py-3 font-black text-slate-950 shadow-glow hover:bg-emerald-400" type="submit">Create invite link</button>
+              </form>
+              <div class="mt-5 grid gap-3">
+                <% invites.forEach((invite) => { %>
+                  <label class="grid gap-2 text-left text-xs font-semibold text-slate-400">
+                    Expires <%= new Date(invite.expiresAt).toLocaleString() %>
+                    <input class="rounded-2xl border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-xs text-emerald-200" value="<%= appBaseUrl %>/invite/<%= invite.token %>" readonly onclick="this.select()">
+                  </label>
+                <% }) %>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="watch-panel hidden h-full overflow-y-auto p-5 scrollbar-soft" data-watch-panel="call">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-xl font-black text-white">Voice and video</h2>
+            <div class="flex gap-2">
+              <button id="startCall" class="rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-black text-slate-950 hover:bg-emerald-400" type="button">Start</button>
+              <button id="hangupCall" class="rounded-2xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-300 hover:border-red-400/60 hover:text-red-200" type="button">Hang up</button>
+            </div>
+          </div>
+          <div class="video-grid mt-5 space-y-3">
+            <video id="localVideo" class="rounded-2xl border border-slate-700 bg-black" muted playsinline autoplay></video>
+            <div id="remoteVideos" class="remote-videos"></div>
+          </div>
+        </section>
+
+        <section class="watch-panel hidden h-full overflow-y-auto p-5 scrollbar-soft" data-watch-panel="members">
+          <h2 class="text-xl font-black text-white">Members</h2>
+          <form method="post" action="/rooms/<%= room.id %>/members" class="mt-4 flex gap-2">
+            <input class="min-w-0 flex-1 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-emerald-400" name="username" placeholder="username" required>
+            <button class="rounded-2xl bg-emerald-500 px-4 py-3 font-black text-slate-950 hover:bg-emerald-400" type="submit">Add</button>
+          </form>
+          <% if (friends.length > 0) { %>
+            <div class="mt-4 flex flex-wrap gap-2">
+              <% friends.forEach((friend) => { %>
+                <form method="post" action="/rooms/<%= room.id %>/members">
+                  <input type="hidden" name="username" value="<%= friend.username %>">
+                  <button class="rounded-full border border-slate-700 px-3 py-2 text-xs font-bold text-slate-300 hover:border-emerald-500/60 hover:text-emerald-200" type="submit">+ <%= friend.username %></button>
+                </form>
+              <% }) %>
+            </div>
+          <% } %>
+          <ul class="mt-5 grid gap-3">
+            <% members.forEach((member) => { %>
+              <li class="flex items-center gap-3 rounded-2xl bg-slate-950 p-3">
+                <span class="grid h-9 w-9 place-items-center rounded-xl bg-emerald-500/15 font-black text-emerald-300"><%= member.username.slice(0, 1).toUpperCase() %></span>
+                <span class="font-bold text-white"><%= member.username %></span>
+              </li>
+            <% }) %>
+          </ul>
+        </section>
+      </div>
+    </aside>
   </div>
 </section>
 

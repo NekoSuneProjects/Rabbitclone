@@ -20,6 +20,28 @@
     window.setInterval(refreshStatus, 5000);
   }
 
+  const tabButtons = Array.from(document.querySelectorAll("[data-watch-tab]"));
+  const tabPanels = Array.from(document.querySelectorAll("[data-watch-panel]"));
+
+  function activateTab(name) {
+    for (const button of tabButtons) {
+      const active = button.getAttribute("data-watch-tab") === name;
+      button.classList.toggle("border-b-2", active);
+      button.classList.toggle("border-emerald-400", active);
+      button.classList.toggle("bg-slate-950", active);
+      button.classList.toggle("text-white", active);
+      button.classList.toggle("text-slate-400", !active);
+    }
+
+    for (const panel of tabPanels) {
+      panel.classList.toggle("hidden", panel.getAttribute("data-watch-panel") !== name);
+    }
+  }
+
+  for (const button of tabButtons) {
+    button.addEventListener("click", () => activateTab(button.getAttribute("data-watch-tab")));
+  }
+
   if (!room || typeof io !== "function") return;
 
   const socket = io();
@@ -38,12 +60,16 @@
     if (!chatMessages) return;
 
     const article = document.createElement("article");
-    article.className = "message";
+    article.className = "rounded-2xl bg-slate-950 p-3";
 
     const meta = document.createElement("div");
+    meta.className = "flex items-center justify-between gap-3";
     const strong = document.createElement("strong");
+    strong.className = "text-sm text-white";
     const time = document.createElement("time");
+    time.className = "text-xs text-slate-500";
     const body = document.createElement("p");
+    body.className = "mt-1 break-words text-sm text-slate-300";
 
     strong.textContent = message.username || "unknown";
     time.textContent = new Date(message.createdAt).toLocaleTimeString();
@@ -80,6 +106,7 @@
       if (!video) {
         video = document.createElement("video");
         video.id = `remote-${target}`;
+        video.className = "rounded-2xl border border-slate-700 bg-black";
         video.autoplay = true;
         video.playsInline = true;
         remoteVideos.append(video);
