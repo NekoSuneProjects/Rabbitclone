@@ -1,8 +1,6 @@
 services:
   app:
-    build:
-      context: ./app
-    image: rabbitclone-app:local
+    image: ghcr.io/nekosuneprojects/rabbitclone-app:main
     ports:
       - "${APP_PORT:-8080}:8080"
     environment:
@@ -39,9 +37,7 @@ services:
       - rabbitclone_net
 
   worker-image:
-    build:
-      context: ./worker
-    image: ${WORKER_IMAGE:-rabbitclone-worker:local}
+    image: ghcr.io/nekosuneprojects/rabbitclone-worker:main
     profiles:
       - build
     command: ["bash", "-lc", "echo worker image built"]

@@ -16,7 +16,7 @@ It includes:
 - Room text chat plus browser-based voice/video calls through WebRTC signaling.
 - A Docker-managed Chromium worker per room with noVNC remote desktop access.
 - MediaMTX as the RTSP server.
-- GitHub Actions that build the web app and worker images and validate the compose file.
+- GitHub Actions that build amd64 and arm64 web app/worker images and validate the compose file.
 
 ## Run locally
 
@@ -64,6 +64,10 @@ RTSP_PUBLIC_BASE=rtsp://192.168.1.50:8554
 - Each started room gets a container named `rabbitclone-worker-<room id>`.
 - Workers publish to MediaMTX internally at `rtsp://mediamtx:8554/<stream key>`.
 - MediaMTX exposes RTSP on host port `8554`.
+
+## GitHub Actions images
+
+The Docker workflow builds and pushes multi-architecture images for `linux/amd64` and `linux/arm64`, so the same GHCR tags can run on x86 hosts and ARM64 devices such as a Raspberry Pi 4/5 running a 64-bit OS.
 
 ## Limitations
 
