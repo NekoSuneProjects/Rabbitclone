@@ -69,6 +69,12 @@ RTSP_PUBLIC_BASE=rtsp://192.168.1.50:8554
 
 The Docker workflow builds and pushes multi-architecture images for `linux/amd64` and `linux/arm64`, so the same GHCR tags can run on x86 hosts and ARM64 devices such as a Raspberry Pi 4/5 running a 64-bit OS.
 
+The app image builds the SQLite native addon from source inside Docker for each target architecture. If you previously hit a `GLIBC_2.38 not found` error on ARM64, rebuild the app image with no cache so the old prebuilt addon is not reused:
+
+```bash
+docker compose build --no-cache app
+```
+
 ## Limitations
 
 This worker captures browser video from X11. Browser audio capture is not enabled yet; adding PulseAudio capture to the FFmpeg command is the next step if your VRChat player needs audio. Voice/video calls are browser-to-browser WebRTC; deploy TURN/STUN infrastructure for reliable calls across strict NAT networks.
