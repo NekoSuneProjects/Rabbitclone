@@ -60,6 +60,8 @@ RTSP_PUBLIC_BASE=rtsp://192.168.1.50:8554
 
 - `app` manages users, rooms, friends, chat, and Docker worker containers.
 - The app stores data in SQLite at `SQLITE_FILE`; in Docker this is `/data/rabbitclone.sqlite`.
+- `WORKER_IMAGE` must point at the worker image the app should launch, for example `ghcr.io/nekosuneprojects/rabbitclone-worker:main`.
+- `AUTO_PULL_WORKER_IMAGE=1` lets the app pull the worker image through the mounted Docker socket when it is missing.
 - `worker-image` is a build-only compose service that produces `rabbitclone-worker:local`.
 - Each started room gets a container named `rabbitclone-worker-<room id>`.
 - Workers publish to MediaMTX internally at `rtsp://mediamtx:8554/<stream key>`.
@@ -74,6 +76,16 @@ The app image builds the SQLite native addon from source inside Docker for each 
 ```bash
 docker compose build --no-cache app
 ```
+
+For GHCR deployments, make sure the `app` service receives this environment value:
+
+```yaml
+environment:
+  WORKER_IMAGE: ghcr.io/nekosuneprojects/rabbitclone-worker:main
+  AUTO_PULL_WORKER_IMAGE: "1"
+```
+
+If the GHCR package is private, run `docker login ghcr.io` on the Docker host first.
 
 ## Limitations
 

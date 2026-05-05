@@ -11,7 +11,8 @@ services:
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8080}
       AUTH_SECRET: ${AUTH_SECRET:-change-this-to-a-long-random-string}
       IDLE_SHUTDOWN_MINUTES: ${IDLE_SHUTDOWN_MINUTES:-10}
-      WORKER_IMAGE: ${WORKER_IMAGE:-rabbitclone-worker:local}
+      WORKER_IMAGE: ${WORKER_IMAGE:-ghcr.io/nekosuneprojects/rabbitclone-worker:main}
+      AUTO_PULL_WORKER_IMAGE: ${AUTO_PULL_WORKER_IMAGE:-1}
       WORKER_NETWORK: ${WORKER_NETWORK:-rabbitclone_net}
       RTSP_INTERNAL_BASE: ${RTSP_INTERNAL_BASE:-rtsp://mediamtx:8554}
       RTSP_PUBLIC_BASE: ${RTSP_PUBLIC_BASE:-rtsp://localhost:8554}

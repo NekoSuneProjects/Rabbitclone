@@ -25,7 +25,8 @@ function readHostPort(inspect, containerPort) {
 class DockerManager {
   constructor() {
     this.docker = new Docker(dockerOptions());
-    this.workerImage = process.env.WORKER_IMAGE || "rabbitclone-worker:local";
+    this.workerImage = process.env.WORKER_IMAGE || "ghcr.io/nekosuneprojects/rabbitclone-worker:main";
+    this.autoPullWorkerImage = process.env.AUTO_PULL_WORKER_IMAGE !== "0";
     this.workerNetwork = process.env.WORKER_NETWORK || "rabbitclone_net";
     this.rtspInternalBase = trimTrailingSlash(process.env.RTSP_INTERNAL_BASE || "rtsp://mediamtx:8554");
     this.rtspPublicBase = trimTrailingSlash(process.env.RTSP_PUBLIC_BASE || "rtsp://localhost:8554");
@@ -57,6 +58,38 @@ class DockerManager {
     const match = containers.find((container) => container.Names.includes(`/${name}`)) || containers[0];
     if (!match) return null;
     return this.docker.getContainer(match.Id);
+  }
+
+  async ensureWorkerImage() {
+    try {
+      await this.docker.getImage(this.workerImage).inspect();
+      return;
+    } catch (error) {
+      if (error.statusCode !== 404) {
+        throw error;
+      }
+    }
+
+    if (!this.autoPullWorkerImage) {
+      throw new Error(`Worker image ${this.workerImage} is missing on the Docker host. Pull it or set WORKER_IMAGE to an existing image.`);
+    }
+
+    await new Promise((resolve, reject) => {
+      this.docker.pull(this.workerImage, (pullError, stream) => {
+        if (pullError) {
+          reject(new Error(`Failed to pull worker image ${this.workerImage}: ${pullError.message}`));
+          return;
+        }
+
+        this.docker.modem.followProgress(stream, (progressError) => {
+          if (progressError) {
+            reject(new Error(`Failed to pull worker image ${this.workerImage}: ${progressError.message}`));
+            return;
+          }
+          resolve();
+        });
+      });
+    });
   }
 
   async status(room) {
@@ -108,6 +141,8 @@ class DockerManager {
       if (inspect.State?.Running) return inspect;
       await existing.remove({ force: true });
     }
+
+    await this.ensureWorkerImage();
 
     const name = this.workerName(room.id);
     const container = await this.docker.createContainer({
@@ -186,4 +221,3 @@ class DockerManager {
 module.exports = {
   DockerManager
 };
-
